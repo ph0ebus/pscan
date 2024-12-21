@@ -50,11 +50,12 @@ Go版本： 1.23.1
 > deploy env
 
 操作系统：Windows、Linux或MacOS跨平台
+
 端口：默认监听8989端口（可在web/services/service.go文件中修改）
 
 # Usage
 
 1.	编译：go build main.go命令可编译为适合运行环境的可执行文件
-2.	运行：运行编译得到的可执行文件即可，linux和macos需要赋予可执行权限（chmod +x main.exe）
-3.	WebUI交互：项目启动后访问http://localhost:8989 即可进入webui，然后按照页面提示进行操作
-4.	扫描：填入必要的参数后，选择合适的扫描模式，即可开始扫描，实时扫描结果会打印到前端页面，完成扫描后会输出 [+] Done字样
+2.	运行：运行编译得到的可执行文件即可，linux和macos需要赋予可执行权限（chmod +x main）
+3.	WebUI交互：项目启动后访问 http://localhost:8989 即可进入webui，然后按照页面提示进行操作
+4.	扫描：填入必要的参数后，选择合适的扫描模式，即可开始扫描，实时扫描结果会打印到前端页面，完成扫描后会输出 `[+] Done` 字样

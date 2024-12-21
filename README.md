@@ -16,6 +16,7 @@
 
 # project struct
 
+```
 pscan/
 ├── main.go                 # 程序入口，初始化配置并启动服务
 ├── go.mod                  # Go 模块配置文件
@@ -36,15 +37,17 @@ pscan/
 │   │   └── routers.go      # 定义路由规则，关联控制器
 │   └── service/            # 服务模块
 │       └── service.go      # HTTP服务
+```
 
 # environment
 
-develop env
+> develop env
 
 Go版本： 1.23.1
+
 浏览器：支持 HTML5 的现代浏览器（推荐 Chrome）
 
-deploy env
+> deploy env
 
 操作系统：Windows、Linux或MacOS跨平台
 端口：默认监听8989端口（可在web/services/service.go文件中修改）

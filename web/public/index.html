@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pscan - Scanner</title>
+    <style>
+        body {
+            background-color: #0a0f16;
+            color: #58a6ff;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .scanner-container {
+            background: linear-gradient(145deg, #161b22, #0d1117);
+            border: 1px solid #21262d;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8), inset 0 2px 10px #000;
+            width: 950px;
+            max-width: 95%;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #ffffff;
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px #58a6ff, 0 0 30px #00ff00;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px #58a6ff, 0 0 20px #00ff00;
+            }
+            to {
+                text-shadow: 0 0 20px #58a6ff, 0 0 40px #00ff00;
+            }
+        }
+
+        p {
+            font-size: 1em;
+            color: #8b949e;
+            margin: 5px 0 20px;
+        }
+
+        form {
+            text-align: left;
+        }
+
+        label {
+            font-size: 0.95em;
+            color: #c9d1d9;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1em;
+            color: #c9d1d9;
+            background-color: #21262d;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 5px rgba(33, 38, 45, 0.8);
+            transition: box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 5px #58a6ff, 0 0 10px #00ff00;
+            background-color: #161b22;
+        }
+
+        button {
+            background-color: #238636;
+            color: #ffffff;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #2ea043;
+            transform: scale(1.05);
+        }
+
+        #scanResults {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #0d1117;
+            border: 1px solid #21262d;
+            border-radius: 5px;
+            max-height: 250px;
+            overflow-y: auto;
+            text-align: left;
+            color: #8b949e;
+            box-shadow: inset 0 0 10px #000;
+        }
+
+        #scanResults p {
+            margin: 0 0 5px;
+            font-size: 0.9em;
+        }
+
+        .error {
+            color: #ff7b7b;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .error::before {
+            content: '⚠ ';
+            color: #ff0000;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .scanner-container {
+                width: 90%;
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanner-container">
+        <h1>pscan</h1>
+        <div id="error" class="error" style="display:none;"></div>
+
+        <form id="scanForm">
+            <label for="ipRange">IP或域名范围：</label>
+            <input type="text" id="ipRange" name="ipRange" required placeholder="例如：192.168.11.11 | 192.168.11.11-255 | 192.168.11.11,192.168.11.12 | example.com">
+
+            <label for="scanType">扫描类型：</label>
+            <select id="scanType" name="scanType" required>
+                <option value="host">主机存活扫描</option>
+                <option value="port">端口开放扫描</option>
+                <option value="service">服务识别扫描</option>
+            </select>
+
+            <label for="portRange">端口范围：</label>
+            <input type="text" id="portRange" name="portRange" placeholder="例如：22 | 1-65535 | 22,80,3306" disabled>
+
+            <button type="submit">开始扫描</button>
+        </form>
+
+        <div id="scanResults" hidden>
+            <p>结果区域</p>
+        </div>
+    </div>
+
+    <script>
+        const scanType = document.getElementById('scanType');
+        const portRange = document.getElementById('portRange');
+        const scanForm = document.getElementById('scanForm');
+        const scanResults = document.getElementById('scanResults');
+        const error = document.getElementById('error');
+
+        scanType.addEventListener('change', () => {
+            portRange.disabled = scanType.value === 'host';
+            if (portRange.disabled) portRange.value = '';
+        });
+
+        const socket = new WebSocket('ws://localhost:8989/api/v1/scan');
+
+        socket.onopen = () => {
+            console.log('WebSocket 已连接');
+            error.style.display = 'none';
+        };
+
+        socket.onerror = () => {
+            error.textContent = 'WebSocket连接失败，请检查服务是否可用。';
+            error.style.display = 'block';
+        };
+
+        socket.onmessage = (event) => {
+            const message = event.data;
+            if (!scanResults.hidden) {
+                scanResults.innerHTML += `<p>${message}</p>`;
+                scanResults.scrollTop = scanResults.scrollHeight;
+            }
+        };
+
+        scanForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            error.style.display = 'none';
+
+            if (socket.readyState !== WebSocket.OPEN) {
+                error.textContent = 'WebSocket未连接，请稍后重试。';
+                error.style.display = 'block';
+                return;
+            }
+
+            const ipRange = document.getElementById('ipRange').value;
+            const scanTypeValue = scanType.value;
+            const portRangeValue = portRange.value;
+
+            if (scanTypeValue !== 'host' && !portRangeValue) {
+                error.textContent = '端口范围不能为空。';
+                error.style.display = 'block';
+                return;
+            }
+
+            const data = { ipRange, scanType: scanTypeValue, portRange: scanTypeValue === 'host' ? null : portRangeValue };
+            scanResults.innerHTML = '<p>扫描任务已提交，等待结果...</p>';
+            scanResults.hidden = false;
+            socket.send(JSON.stringify(data));
+        });
+    </script>
+</body>
+</html>
